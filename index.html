@@ -1,35 +1,194 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GWEN — Unicode Universe</title>
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#21152b">
+<title>GWEN Unicode World</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#171522;color:white;font-family:Arial,sans-serif}
+header{text-align:center;padding:35px 15px;background:linear-gradient(135deg,#24152f,#b34c85,#f2a5c9)}
+header h1{font-size:42px;letter-spacing:5px;margin:0}
+header p{color:white}
+main{max-width:1100px;margin:auto;padding:18px}
+.search{width:100%;padding:15px;border-radius:14px;border:2px solid #e78bb9;background:#292438;color:white;font-size:16px}
+h2{color:#f2a5c9}
+.categories{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}
+.categories button,.more{padding:11px 14px;border:1px solid #dc80ad;border-radius:20px;background:#30243e;color:white}
+.categories button.active,.more{background:#d85d9e;color:white}
+.info{color:#cbb7d0;font-size:13px;margin:14px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:9px}
+.symbol{background:#292438;border:1px solid #49354f;border-radius:12px;min-height:70px;display:flex;align-items:center;justify-content:center;font-size:27px;cursor:pointer}
+.symbol:active{background:#bd5995}
+.symbol:hover{border-color:#ed8cbe}
+.actions{text-align:center;margin:22px}
+.more{padding:14px 28px;font-size:15px}
+footer{text-align:center;padding:25px;color:#cbb7d0}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#ee9bc5;color:#28152b;padding:13px 22px;border-radius:25px;display:none}
+</style>
 </head>
 <body>
-
 <header>
-  <h1>GWEN<span>.</span></h1>
-  <p>UNICODE UNIVERSE</p>
+<h1>🕷️ GWEN</h1>
+<h2 style="color:white">MEGA UNICODE WORLD</h2>
+<p>DISCOVER • SEARCH • COPY</p>
 </header>
-
 <main>
-  <section class="hero">
-    <p>YOUR CREATIVE SPACE</p>
-    <h2>Make your text<br><span>UNFORGETTABLE.</span></h2>
-    <p>Explore symbols, characters and typography.</p>
-  </section>
-
-  <input id="search" placeholder="Search symbols...">
-
-  <section id="categories">
-    <h2>Explore Universe</h2>
-    <div id="symbols"></div>
-  </section>
+<input id="search" class="search" placeholder="🔎 Search or paste a character...">
+<div class="categories" id="categories"></div>
+<div class="info" id="info">Choose a category</div>
+<div class="grid" id="grid"></div>
+<div class="actions"><button class="more" id="more">LOAD MORE ↓</button></div>
 </main>
+<footer>♡ GWEN UNICODE · Made with love 🕷️</footer>
+<div id="toast">Copied successfully! ♡</div>
 
-<footer>GWEN © 2026 — MADE WITH CREATIVITY</footer>
+<script>
+const blocks=[
+["Hearts & Love",0x2600,0x26FF],
+["Arrows",0x2190,0x21FF],
+["Math & Operators",0x2200,0x22FF],
+["Technical Symbols",0x2300,0x23FF],
+["Enclosed Characters",0x2460,0x24FF],
+["Box Drawing",0x2500,0x257F],
+["Geometric Shapes",0x25A0,0x25FF],
+["Miscellaneous Symbols",0x2600,0x26FF],
+["Dingbats",0x2700,0x27BF],
+["Supplemental Arrows",0x27F0,0x27FF],
+["Math Extended",0x2900,0x2AFF],
+["Braille Patterns",0x2800,0x28FF],
+["Greek Letters",0x0370,0x03FF],
+["Cyrillic Letters",0x0400,0x04FF],
+["Latin Extended",0x0100,0x024F],
+["General Punctuation",0x2000,0x206F],
+["Currency Symbols",0x20A0,0x20CF],
+["Superscripts & Subscripts",0x2070,0x209F],
+["Letterlike Symbols",0x2100,0x214F],
+["Number Forms",0x2150,0x218F],
+["CJK Symbols",0x3000,0x303F],
+["Japanese Hiragana",0x3040,0x309F],
+["Japanese Katakana",0x30A0,0x30FF],
+["Arabic",0x0600,0x06FF],
+["Hebrew",0x0590,0x05FF],
+["Devanagari",0x0900,0x097F],
+["Hangul",0xAC00,0xD7AF],
+["Chess & Cards",0x1FA00,0x1FA6F],
+["Emoticons",0x1F600,0x1F64F],
+["Extra Symbols & Emoji",0x1F300,0x1F5FF],
+["Supplemental Symbols",0x1F900,0x1F9FF],
+["More Emoji",0x1FA70,0x1FAFF]
+];
 
-<script src="script.js"></script>
+const decorations=[
+["♡","♥","❤","❥","❣","ღ","ლ","დ","💗","💖","💕","💞"],
+["✿","❀","❁","❃","❋","❊","❉","⚘","❦","❧","☘"],
+["༺","༻","༄","࿐","꧁","꧂","𓆩","𓆪","『","』","【","】"],
+["♔","♕","♖","♗","♘","♙","♚","♛","♜","♝","♞","♟"],
+["♪","♫","♬","♩","♭","♮","♯"],
+["★","☆","✦","✧","✩","✪","✫","✬","✭","✮","✯","✰","⋆"]
+];
+
+const assigned=/\p{Assigned}/u;
+const categories=document.getElementById("categories");
+const grid=document.getElementById("grid");
+const search=document.getElementById("search");
+const info=document.getElementById("info");
+const more=document.getElementById("more");
+
+let current=null,all=[],shown=0;
+const batch=120;
+
+function getCharacters(block){
+let arr=[];
+for(let n=block[1];n<=block[2];n++){
+if(n>=0xD800&&n<=0xDFFF)continue;
+try{
+let c=String.fromCodePoint(n);
+if(assigned.test(c)&&!/\p{Cc}|\p{Cf}|\p{Cs}/u.test(c)){
+arr.push(c);
+}
+}catch(e){}
+}
+return arr;
+}
+
+function makeCategory(name,characters){
+let b=document.createElement("button");
+b.textContent=name;
+b.onclick=()=>{
+current={name,characters};
+search.value="";
+document.querySelectorAll(".categories button").forEach(x=>x.classList.remove("active"));
+b.classList.add("active");
+render();
+};
+categories.appendChild(b);
+}
+
+blocks.forEach(b=>makeCategory(b[0],getCharacters(b)));
+decorations.forEach((d,i)=>makeCategory(
+["Hearts & Love","Flowers & Nature","Fancy Decorations","Chess & Cards","Music","Stars & Magic"][i],
+d
+));
+
+function render(){
+all=current.characters;
+shown=0;
+grid.innerHTML="";
+loadMore();
+}
+
+function loadMore(){
+let query=search.value.trim().toLowerCase();
+let filtered=all.filter(c=>c.toLowerCase().includes(query));
+let part=filtered.slice(shown,shown+batch);
+
+part.forEach(c=>{
+let el=document.createElement("button");
+el.className="symbol";
+el.textContent=c;
+el.title="Tap to copy "+c;
+el.onclick=()=>copy(c);
+grid.appendChild(el);
+});
+
+shown+=part.length;
+info.textContent=current.name+" · "+filtered.length+" characters · Showing "+shown;
+more.style.display=shown<filtered.length?"inline-block":"none";
+}
+
+function copy(c){
+if(navigator.clipboard&&window.isSecureContext){
+navigator.clipboard.writeText(c).then(toast).catch(()=>fallback(c));
+}else fallback(c);
+}
+
+function fallback(c){
+let t=document.createElement("textarea");
+t.value=c;
+document.body.appendChild(t);
+t.select();
+document.execCommand("copy");
+t.remove();
+toast();
+}
+
+function toast(){
+let t=document.getElementById("toast");
+t.style.display="block";
+setTimeout(()=>t.style.display="none",1200);
+}
+
+search.addEventListener("input",()=>{
+grid.innerHTML="";
+shown=0;
+loadMore();
+});
+
+more.onclick=loadMore;
+categories.querySelector("button").click();
+</script>
 </body>
 </html>

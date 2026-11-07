@@ -1,0 +1,150 @@
+cat > index.html <<'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#21182c">
+<title>GWEN | Mega Unicode</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#171522;color:#fff;font-family:Arial,sans-serif}
+header{text-align:center;padding:32px 15px;background:linear-gradient(135deg,#311c3c,#a64278,#e98bb4)}
+.logo{font-size:42px;font-weight:900;letter-spacing:5px}
+header p{margin:8px;color:#ffe8f5}
+main{max-width:1050px;margin:auto;padding:18px}
+h2{color:#f3a6d0}
+.search{width:100%;padding:16px;border-radius:15px;border:2px solid #db85b4;background:#292438;color:white;font-size:16px;outline:none}
+.categories{display:flex;gap:9px;flex-wrap:wrap;margin:17px 0}
+.categories button,.more{border:1px solid #d77caf;background:#30243e;color:white;padding:10px 14px;border-radius:20px;cursor:pointer}
+.categories button.active,.more{background:#dc70aa}
+.info{color:#c9b8d0;font-size:13px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:9px}
+.symbol{background:#292438;border:1px solid #49354f;border-radius:12px;min-height:70px;display:flex;align-items:center;justify-content:center;font-size:27px;cursor:pointer;position:relative}
+.symbol:active{background:#bd5995}
+.symbol small{position:absolute;bottom:3px;font-size:9px;color:#cbb6cc}
+.symbol:hover{border-color:#ed8cbe}
+.actions{text-align:center;margin:22px}
+.more{padding:13px 25px;font-size:15px}
+footer{text-align:center;padding:28px;color:#bfaac4}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#e783b7;color:#24152a;padding:12px 22px;border-radius:25px;display:none}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">🕷️ GWEN</div>
+<h2 style="color:white;margin:8px">MEGA UNICODE LIBRARY</h2>
+<p>Discover • Explore • Copy • Create</p>
+</header>
+<main>
+<input class="search" id="search" placeholder="🔎 Search symbols or paste a character...">
+<div class="categories" id="categories"></div>
+<div class="info" id="info"></div>
+<div class="grid" id="grid"></div>
+<div class="actions"><button class="more" id="more">LOAD MORE ↓</button></div>
+</main>
+<footer>♡ GWEN UNICODE · Made with love 🕷️</footer>
+<div id="toast">Copied successfully! ♡</div>
+
+<script>
+const blocks=[
+{name:"Hearts & Love",chars:"♡ ♥ ❤ ❥ ❣ ღ ლ დ 💗 💖 💕 💞 💓 💘 💝"},
+{name:"Stars & Magic",chars:"★ ☆ ✦ ✧ ✩ ✪ ✫ ✬ ✭ ✮ ✯ ✰ ⋆ ⭑ ⭒ ✵ ✶ ✷ ✸ ✹ ✺"},
+{name:"Flowers & Nature",chars:"✿ ❀ ❁ ❃ ❋ ❊ ❉ ⚘ ❦ ❧ ☘ ♧ ♣ ♠ ☼ ☀ ☁ ☂ ☃ ❄"},
+{name:"Fancy Decorations",chars:"༺ ༻ ༄ ࿐ ꧁ ꧂ 𓆩 𓆪 『 』 【 】 《 》 〈 〉 ۞ ۩"},
+{name:"Chess & Cards",chars:"♔ ♕ ♖ ♗ ♘ ♙ ♚ ♛ ♜ ♝ ♞ ♟ ♠ ♣ ♦ ♥"},
+{name:"Music",chars:"♪ ♫ ♬ ♩ ♭ ♮ ♯ °"},
+{name:"Religious & Cultural",chars:"☯ ☮ ☪ ✝ ✞ ✟ ☸ ॐ 卍 卐"},
+{name:"Arrows",range:[0x2190,0x21FF]},
+{name:"Math & Operators",range:[0x2200,0x22FF]},
+{name:"Technical",range:[0x2300,0x23FF]},
+{name:"Numbers & Enclosed",range:[0x2460,0x24FF]},
+{name:"Box Drawing",range:[0x2500,0x257F]},
+{name:"Geometric Shapes",range:[0x25A0,0x25FF]},
+{name:"Miscellaneous Symbols",range:[0x2600,0x26FF]},
+{name:"Dingbats",range:[0x2700,0x27BF]},
+{name:"Supplemental Arrows",range:[0x27F0,0x27FF]},
+{name:"Math Extended",range:[0x2900,0x2AFF]},
+{name:"Greek Letters",range:[0x0370,0x03FF]},
+{name:"Cyrillic Letters",range:[0x0400,0x04FF]},
+{name:"Braille Patterns",range:[0x2800,0x28FF]}
+];
+
+function getChars(category){
+if(category.chars)return [...new Set([...category.chars.replace(/\s/g,"")])];
+const [start,end]=category.range;
+let arr=[];
+for(let i=start;i<=end;i++){
+try{
+let c=String.fromCodePoint(i);
+if(!/[\u0000-\u001F\u007F-\u009F]/.test(c))arr.push(c);
+}catch(e){}
+}
+return arr;
+}
+let current=blocks[0],all=[],shown=0,step=120;
+const grid=document.getElementById("grid");
+const cats=document.getElementById("categories");
+const info=document.getElementById("info");
+const more=document.getElementById("more");
+const search=document.getElementById("search");
+
+blocks.forEach((b)=>{
+let btn=document.createElement("button");
+btn.textContent=b.name;
+btn.onclick=()=>{
+current=b;search.value="";
+document.querySelectorAll(".categories button").forEach(x=>x.classList.remove("active"));
+btn.classList.add("active");
+render();
+};
+cats.appendChild(btn);
+});
+
+function render(){
+all=getChars(current);
+shown=0;
+grid.innerHTML="";
+load();
+}
+function load(){
+let filtered=all.filter(c=>c.includes(search.value));
+let part=filtered.slice(shown,shown+step);
+part.forEach(c=>{
+let el=document.createElement("div");
+el.className="symbol";
+el.innerHTML="";
+let char=document.createElement("span");
+char.textContent=c;
+el.appendChild(char);
+el.onclick=()=>copy(c);
+grid.appendChild(el);
+});
+shown+=part.length;
+info.textContent=current.name+" · "+filtered.length+" characters · Showing "+shown;
+more.style.display=shown<filtered.length?"inline-block":"none";
+}
+function copy(c){
+if(navigator.clipboard && window.isSecureContext){
+navigator.clipboard.writeText(c).then(()=>toast());
+}else{
+let t=document.createElement("textarea");
+t.value=c;document.body.appendChild(t);t.select();
+document.execCommand("copy");t.remove();toast();
+}
+}
+function toast(){
+let t=document.getElementById("toast");
+t.style.display="block";
+setTimeout(()=>t.style.display="none",1200);
+}
+search.addEventListener("input",()=>{
+grid.innerHTML="";shown=0;load();
+});
+more.onclick=load;
+cats.querySelector("button").classList.add("active");
+render();
+</script>
+</body>
+</html>
+EOF
